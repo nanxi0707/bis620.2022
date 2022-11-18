@@ -20,7 +20,12 @@ knitr::opts_chunk$set(
 [![Test coverage](https://github.com/nanxi0707/bis620.2022/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/nanxi0707/bis620.2022/actions/workflows/test-coverage.yaml)
 <!-- badges: end -->
 
-The goal of bis620.2022 is to ...
+The goal of bis620.2022 is to capture functions, data, and documentation for BIS620. You can use this package to plot the UKBiobank Accelerometry Data and get the Spectral Signature of Accelerometry Data.
+
+[lint result](https://github.com/nanxi0707/bis620.2022/actions/workflows/lint.yaml)
+
+[coverage page](https://github.com/nanxi0707/bis620.2022/actions/workflows/test-coverage.yaml)
+
 
 ## Installation
 
@@ -38,20 +43,7 @@ This is a basic example which shows you how to solve a common problem:
 ```{r example}
 library(bis620.2022)
 ## basic example code
+data(ukb_accel)
+accel_plot(ukb_accel[1:100, ])
+spec_sig(ukb_accel[1:100, ], take_log = TRUE)
 ```
-
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this. You could also use GitHub Actions to re-render `README.Rmd` every time you push. An example workflow can be found here: <https://github.com/r-lib/actions/tree/v1/examples>.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.

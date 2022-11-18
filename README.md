@@ -10,7 +10,15 @@
 coverage](https://github.com/nanxi0707/bis620.2022/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/nanxi0707/bis620.2022/actions/workflows/test-coverage.yaml)
 <!-- badges: end -->
 
-The goal of bis620.2022 is to …
+The goal of bis620.2022 is to capture functions, data, and documentation
+for BIS620. You can use this package to plot the UKBiobank Accelerometry
+Data and get the Spectral Signature of Accelerometry Data.
+
+[lint
+result](https://github.com/nanxi0707/bis620.2022/actions/workflows/lint.yaml)
+
+[coverage
+page](https://github.com/nanxi0707/bis620.2022/actions/workflows/test-coverage.yaml)
 
 ## Installation
 
@@ -29,31 +37,26 @@ This is a basic example which shows you how to solve a common problem:
 ``` r
 library(bis620.2022)
 ## basic example code
+data(ukb_accel)
+accel_plot(ukb_accel[1:100, ])
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
+<img src="man/figures/README-example-1.png" width="100%" />
 
 ``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
+spec_sig(ukb_accel[1:100, ], take_log = TRUE)
+#> # A tibble: 50 × 4
+#>         X     Y      Z  freq
+#>     <dbl> <dbl>  <dbl> <dbl>
+#>  1  2.98  3.52   4.64   1.01
+#>  2  3.26  1.44   1.43   1.03
+#>  3  2.10  1.44   2.26   1.05
+#>  4  2.01  1.36   1.58   1.08
+#>  5  0.438 1.01   1.01   1.10
+#>  6  1.46  0.737 -0.199  1.12
+#>  7  0.961 0.962  1.05   1.15
+#>  8  1.35  1.06   0.935  1.18
+#>  9  1.29  1.06  -1.44   1.20
+#> 10 -0.148 0.957  1.04   1.23
+#> # … with 40 more rows
 ```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this. You could also
-use GitHub Actions to re-render `README.Rmd` every time you push. An
-example workflow can be found here:
-<https://github.com/r-lib/actions/tree/v1/examples>.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
