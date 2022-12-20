@@ -10,9 +10,12 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.width = 7, fig.height = 4
 )
 ```
+
+### This is a group project by Nanxi Yu (ny229) and Jiacheng Ni (jn576).
 
 ```{r setup}
 library(bis620.2022)
@@ -20,124 +23,151 @@ library(bis620.2022)
 
 ## Background and motivation
 
-Colorectal cancer (CRC) is the third most common cancer among American men and women, and Panitumumab is considered as an effective treatment for metastatic colorectal cancer. Therefore, we hope to conduct this research to rigorously validate the effectiveness of introducing Panitumumab to the treatment of metastatic colorectal cancer. Besides, there exists KRAS mutation in tumor of enrolled patients, and prior study suggested that KRAS mutation is a predictive factor in this study, so we also want to further evaluate whether the treatment effect panitumumab-FOLFOX4 differs between patients with wild-type KRAS tumors and patients with mutant KRAS tumors.
+Colorectal cancer (CRC) is the third most common cancer among American men and women, and Panitumumab is considered as an effective treatment for metastatic colorectal cancer. Therefore, we hope to conduct this research to rigorously validate the effectiveness of introducing Panitumumab to the treatment of metastatic colorectal cancer. Besides, there exists KRAS mutation in tumor of enrolled patients, and prior study suggested that KRAS mutation is a predictive factor in this study, so we also want to further evaluate whether the treatment effect panitumumab + FOLFOX4 differs between patients with wild-type KRAS tumors and patients with mutant KRAS tumors.
 
 ## Research question
 
-Our primary research question for this project is whether panitumumab-FOLFOX4 will improved the progression-free survival(PFS) and the survival rate of patients with metastatic colorectal cancer when compared with those who receive FOLFOX4 treatment alone. Our secondary research question is whether the treatment effect of panitumumab-FOLFOX4 differs between patients with wild-type KRAS tumors and patients with mutant KRAS tumors.
+Our primary research question for this project is whether panitumumab + FOLFOX4 will improved the progression-free survival(PFS) and the survival rate of patients with metastatic colorectal cancer when compared with those who receive FOLFOX4 treatment alone. Our secondary research question is whether the treatment effect of panitumumab + FOLFOX4 differs between patients with wild-type KRAS tumors and patients with mutant KRAS tumors.
 
 ## Data cleaning and exploration
 
-We first import local data files. To run 
-
-```{r, warning=FALSE, message=FALSE}
-library(haven)
-library(purrr)
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+# load data and packages
+load("../data/adsl.rda", verbose = TRUE)
+load("../data/biomark.rda", verbose = TRUE)
+library(tidyr)
 library(dplyr)
-folfiri_path = file.path("..", "AllProvidedFiles_309", "PDS_DSA_20050203")
-ff_files = dir(folfiri_path)
-ff_names = gsub("_pds2019.sas7bdat", "", ff_files)
-dl = map(file.path(folfiri_path, ff_files), read_sas)
-names(dl) = ff_names
+library(purrr)
+library(survival)
+library(survminer)
 ```
 
 ```{r}
-library(survival) 
-library(survminer)
-library(tidyr)
-adsl=dl$adsl
-subjid_marker=dl$biomark |>
-  select(SUBJID,BMMTR1,BMMTR2,BMMTR3,BMMTR15) |>
+# select subject ID and type (wild-type or mutant) from table biomark
+# based on knowledge from the course
+subjid_marker <- biomark |>
+  select(SUBJID, BMMTR1, BMMTR2, BMMTR3, BMMTR15) |>
   pivot_longer(-SUBJID) |>
   group_by(SUBJID) |>
   summarise(
-    `Mutant`=sum(value=='Mutant'),
-    `Wild-type`=sum(value=='Wild-type'),
-    `Unknown`=sum(value=='' | value=='Failure')
+    `Mutant` = sum(value == "Mutant"),
+    `Wild-type` = sum(value == "Wild-type"),
+    `Unknown` = sum(value == "" | value == "Failure")
   ) |>
-  mutate(marker=case_when(`Mutant`>=1 ~ 'Mutant',
-                        `Mutant`==0 & `Wild-type`>`Unknown` ~ 'Wild-type',
-                        TRUE ~ 'Unknown')) |>
-  select(SUBJID, marker) 
+  mutate(marker = case_when(`Mutant` >= 1 ~ "Mutant",
+                        `Mutant` == 0 & `Wild-type` > `Unknown` ~ "Wild-type",
+                        TRUE ~ "Unknown")) |>
+  select(SUBJID, marker)
+```
 
+```{r}
+# bar plot of type
 subjid_marker |>
   group_by(marker) |>
-  summarise(n=n()) |>
+  summarise(n = n()) |>
   ggplot(aes(x = marker, y = n)) +
-    geom_col() + 
+    geom_col() +
+    ggtitle("Bar plot of type") +
+    xlab("type") +
+    ylab("count") +
     theme_bw()
-
-dt=subjid_marker |>
-  left_join(dl$adsl, by='SUBJID') |>
-  select(marker,ATRT,DTH,DTHDY,PFSDYCR) |>
-  filter(marker!='Unknown') |>
-  mutate(group=paste(ATRT, marker, sep = " "))
-
 ```
-Primary research question
 
-(1)whether panitumumab-FOLFOX4 will improved the progression-free survival(PFS) of patients with metastatic colorectal cancer when compared with those who receive FOLFOX4 treatment alone. 
-```{r}
-log_rank <- survdiff(Surv(PFSDYCR) ~ ATRT, rho = 0,
-                     data = dt) 
-log_rank$chisq
-1- pchisq(q = log_rank$chisq, df = 1)
-```
-p=0.567,no significant differences in PFS between patients who receive FOLFOX alone and Panitumumab + FOLFOX
-
-(2)whether panitumumab-FOLFOX4 will improved the survival rate of patients with metastatic colorectal cancer when compared with those who receive FOLFOX4 treatment alone. 
-```{r}
-log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0,
-                     data = dt) 
-log_rank$chisq
-1- pchisq(q = log_rank$chisq, df = 1)
-
-f1<-survfit(Surv(DTHDY,DTH)~ATRT, data = dt)
-ggsurvplot(f1,dt,title="survival curve")
-#lable顺序
-```
-p=0.755, no significant differences in survival rate between patients who receive FOLFOX alone and Panitumumab + FOLFOX
-
-
-Further investigation
-```{r}
-f2<-survfit(Surv(DTHDY,DTH)~group, data = dt)
-ggsurvplot(f2,dt,title="survival curve",legend="right")
-```
-```{r}
-log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0,
-                     data = dt[which(dt$marker=='Mutant'),]) 
-log_rank$chisq
-1- pchisq(q = log_rank$chisq, df = 1)
-
-```
-weak significant difference in Mutant group 
+Above is the bar plot of patient's type (wild-type, mutant, or unknown). Patients with type "Unknown" are dropped below because these records are non-informative. The distribution of "Mutant" and "Wild-type" is well-balanced, which is desirable for our analysis.
 
 ```{r}
-log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0,
-                     data = dt[which(dt$marker=='Wild-type'),]) 
-log_rank$chisq
-1- pchisq(q = log_rank$chisq, df = 1)
+# drop "Unknown" type
+dt <- subjid_marker |>
+  left_join(adsl, by = "SUBJID") |>
+  select(marker, ATRT, DTH, DTHDY, PFSDYCR) |>
+  filter(marker != "Unknown") |>
+  mutate(group = paste(ATRT, marker, sep = " "))
 ```
-weak significant differnce in Wild-type group
 
-Secondary research question
+## Analysis
 
-whether the treatment effect of panitumumab-FOLFOX4 differs between patients with wild-type KRAS tumors and patients with mutant KRAS tumors.
+### Primary research question
+
+For the primary research question, we would like to test whether panitumumab + FOLFOX4 will improve (1) the progression-free survival(PFS) and (2) the survival rate of patients with metastatic colorectal cancer when compared with those who receive FOLFOX4 treatment alone. To do this, we conduct log-rank tests. The null hypothesis is that the PFS and the survival rate are the same in the two treatment groups. The alternative hypothesis is that the PFS and the survival rate are different.
 
 ```{r}
-dt$marker=factor(dt$marker)
-dt$ATRT=factor(dt$ATRT)
-m1<-coxph(Surv(DTHDY, DTH) ~ ATRT + marker, data = dt, ties = "breslow") 
-m2<-coxph(Surv(DTHDY, DTH) ~ ATRT + marker + ATRT:marker, data = dt, ties = "breslow")
-anova(m1,m2)
+# (1) PHS
+log_rank <- survdiff(Surv(PFSDYCR) ~ ATRT, rho = 0, data = dt) # fit survival model
+log_rank$chisq # test statistic
+1 - pchisq(q = log_rank$chisq, df = 1) # p-value
 ```
-p=0.015, significant differnce. There is strong evidence that the treatment effect of panitumumab-FOLFOX4 depends on the type.
+
+The p-value is $p=0.567$, which is greater than $0.05$. There is no significant difference in the PFS between patients who receive FOLFOX alone and Panitumumab + FOLFOX.
 
 ```{r}
-f3<-survfit(Surv(DTHDY,DTH)~ATRT, data = dt[which(dt$marker=='Mutant'),])
-f4<-survfit(Surv(DTHDY,DTH)~ATRT, data = dt[which(dt$marker=='Wild-type'),])
-ggsurvplot(f1,dt,title="survival curve in Mutant group")
-ggsurvplot(f2,dt,title="survival curve in Wild-type group")
+# (2) survival rate
+log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0, data = dt) # fit survival model
+log_rank$chisq # test statistic
+1 - pchisq(q = log_rank$chisq, df = 1) # p-value
 ```
 
+The p-value is $p=0.737$, which is greater than $0.05$. There is no significant difference in the survival rates between patients who receive FOLFOX alone and Panitumumab + FOLFOX.
+
+### Further investigation on the survival rates
+
+Panitumumab is believed to be an effective treatment for metastatic colorectal cancer and it is surprising that no significant treatment effect is detected. In the following graph, we show the survival curves for the two treatment groups.
+
+```{r}
+f1 <- survfit(Surv(DTHDY, DTH) ~ ATRT, data = dt)
+ggsurvplot(f1, dt, title = "survival curves for the two treatment groups")
+```
+
+As shown in the above graph, the two survival curves are indeed quite similar. However, when we compare the treatment effects on patients with different mutation types, we notice that the survival curves become quite different. The survival curves for the four treatment and mutation type groups are shown below.
+
+```{r}
+f2 <- survfit(Surv(DTHDY, DTH) ~ group, data = dt)
+ggsurvplot(f2, dt, title = "survival curves for the four treatment*type groups") +
+  guides(color = guide_legend(nrow = 2))
+```
+
+Based on the graph, FOLFOX alone seems to have better treatment effect (higher survival rate) than Panitumumab + FOLFOX treatment on Mutant patients. However, giving Panitumumab improves the survival rate for Wild-type patients. We subset the data on patients' types. For each type of patients, we formally test whether the survival rates differ between the two treatments. The null hypothesis is that the survival rates are the same for the two treatments. The alternative hypothesis is that the survival rates differ.
+
+```{r}
+# Mutant patients
+log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0, data = dt[which(dt$marker == "Mutant"), ])
+log_rank$chisq # log-rank test statistic
+1 - pchisq(q = log_rank$chisq, df = 1) # p-value
+```
+The p-value is $p=0.085$. Since the p-value is less than 0.1, we conclude that there is weak difference on survival rates between the two treatments for Mutant patients.
+
+```{r}
+# Wild-type patients
+log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0, data = dt[which(dt$marker == "Wild-type"), ])
+log_rank$chisq # log-rank test statistic
+1 - pchisq(q = log_rank$chisq, df = 1) # p-value
+```
+The p-value is $p=0.09$. Since the p-value is less than 0.1, we conclude that there is weak difference on survival rates between the two treatments fpr Wild-type patients.
+
+### Secondary research question
+
+Our secondary research question is whether the treatment effect of panitumumab + FOLFOX4 differs between patients with wild-type KRAS tumors and patients with mutant KRAS tumors. The null hypothesis is that the treatment effect remains the same in two types of patients. The alternative hypothesis is that the treatment effect are different. Based on the survival plot above, we believe the treatment effect of panitumumab + FOLFOX4 may differ in patients with different types of KRAS tumors. Next, we will test this formally using chi-squared test.
+
+```{r}
+dt$marker <- factor(dt$marker)
+dt$ATRT <- factor(dt$ATRT)
+# use breslow method to handle ties
+# fit cox proportional hazards models
+m1 <- coxph(Surv(DTHDY, DTH) ~ ATRT + marker, data = dt, ties = "breslow")
+m2 <- coxph(Surv(DTHDY, DTH) ~ ATRT + marker + ATRT:marker, data = dt, ties = "breslow")
+anova(m1, m2)
+```
+
+The p-value of the test is $p=0.015$, which is less than $0.05$. There is significant difference in the treatment effect of panitumumab + FOLFOX4 between patients with wild-type KRAS tumors and patients with mutant KRAS tumors. There is strong evidence that the treatment effect of panitumumab + FOLFOX4 depends on the mutation type.
+
+The following plots are the survival curves of the two treatments in the Mutant group and the Wild-type group. We can notice that giving panitumumab has contrary effect in the two mutation groups. This might explains why no difference between treatments is detected when we do not specify patient types in our primary research question.
+
+```{r}
+f3 <- survfit(Surv(DTHDY, DTH) ~ ATRT, data = dt[which(dt$marker == "Mutant"), ])
+f4 <- survfit(Surv(DTHDY, DTH) ~ ATRT, data = dt[which(dt$marker == "Wild-type"), ])
+ggsurvplot(f3, dt, title = "survival curve in Mutant group")
+ggsurvplot(f4, dt, title = "survival curve in Wild-type group")
+```
+
+## Conclusion
+
+In conclusion, no difference in progression-free survival(PFS) or survival rates between patients receiving FOLFOX4 treatment alone and panitumumab + FOLFOX4 is detected when we do not specify the types of KRAS tumors of the patients. The treatment effect of panitumumab + FOLFOX4 differs between patients with wild-type KRAS tumors and patients with mutant KRAS tumors. FOLFOX alone has better treatment effect (higher survival rate) than Panitumumab + FOLFOX on Mutant patients. However, giving Panitumumab can improve the survival rate for Wild-type patients. Based on this project, we suggest that Panitumumab should only be given to patients with wild-type KRAS tumors when treating metastatic colorectal cancer.
