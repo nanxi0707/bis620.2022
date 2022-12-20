@@ -27,7 +27,7 @@ You can install the development version of bis620.2022 from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("nanxi0707/bis620.2022")
+devtools::install_github("nanxi0707/bis620.2022",build_vignettes=TRUE)
 ```
 
 ## Example
