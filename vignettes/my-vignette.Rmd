@@ -92,7 +92,8 @@ For the primary research question, we would like to test whether panitumumab + F
 
 ```{r}
 # (1) PHS
-log_rank <- survdiff(Surv(PFSDYCR) ~ ATRT, rho = 0, data = dt) # fit survival model
+log_rank <- survdiff(Surv(PFSDYCR) ~ ATRT, rho = 0,
+                     data = dt) # fit survival model
 log_rank$chisq # test statistic
 1 - pchisq(q = log_rank$chisq, df = 1) # p-value
 ```
@@ -101,7 +102,8 @@ The p-value is $p=0.567$, which is greater than $0.05$. There is no significant 
 
 ```{r}
 # (2) survival rate
-log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0, data = dt) # fit survival model
+log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0,
+                     data = dt) # fit survival model
 log_rank$chisq # test statistic
 1 - pchisq(q = log_rank$chisq, df = 1) # p-value
 ```
@@ -121,7 +123,8 @@ As shown in the above graph, the two survival curves are indeed quite similar. H
 
 ```{r}
 f2 <- survfit(Surv(DTHDY, DTH) ~ group, data = dt)
-ggsurvplot(f2, dt, title = "survival curves for the four treatment*type groups") +
+ggsurvplot(f2, dt,
+           title = "survival curves for the four treatment*type groups") +
   guides(color = guide_legend(nrow = 2))
 ```
 
@@ -129,7 +132,8 @@ Based on the graph, FOLFOX alone seems to have better treatment effect (higher s
 
 ```{r}
 # Mutant patients
-log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0, data = dt[which(dt$marker == "Mutant"), ])
+log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0,
+                     data = dt[which(dt$marker == "Mutant"), ])
 log_rank$chisq # log-rank test statistic
 1 - pchisq(q = log_rank$chisq, df = 1) # p-value
 ```
@@ -137,7 +141,8 @@ The p-value is $p=0.085$. Since the p-value is less than 0.1, we conclude that t
 
 ```{r}
 # Wild-type patients
-log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0, data = dt[which(dt$marker == "Wild-type"), ])
+log_rank <- survdiff(Surv(DTHDY, DTH) ~ ATRT, rho = 0,
+                     data = dt[which(dt$marker == "Wild-type"), ])
 log_rank$chisq # log-rank test statistic
 1 - pchisq(q = log_rank$chisq, df = 1) # p-value
 ```
@@ -153,7 +158,8 @@ dt$ATRT <- factor(dt$ATRT)
 # use breslow method to handle ties
 # fit cox proportional hazards models
 m1 <- coxph(Surv(DTHDY, DTH) ~ ATRT + marker, data = dt, ties = "breslow")
-m2 <- coxph(Surv(DTHDY, DTH) ~ ATRT + marker + ATRT:marker, data = dt, ties = "breslow")
+m2 <- coxph(Surv(DTHDY, DTH) ~ ATRT + marker + ATRT:marker,
+            data = dt, ties = "breslow")
 anova(m1, m2)
 ```
 
@@ -162,8 +168,10 @@ The p-value of the test is $p=0.015$, which is less than $0.05$. There is signif
 The following plots are the survival curves of the two treatments in the Mutant group and the Wild-type group. We can notice that giving panitumumab has contrary effect in the two mutation groups. This might explains why no difference between treatments is detected when we do not specify patient types in our primary research question.
 
 ```{r}
-f3 <- survfit(Surv(DTHDY, DTH) ~ ATRT, data = dt[which(dt$marker == "Mutant"), ])
-f4 <- survfit(Surv(DTHDY, DTH) ~ ATRT, data = dt[which(dt$marker == "Wild-type"), ])
+f3 <- survfit(Surv(DTHDY, DTH) ~ ATRT,
+              data = dt[which(dt$marker == "Mutant"), ])
+f4 <- survfit(Surv(DTHDY, DTH) ~ ATRT,
+              data = dt[which(dt$marker == "Wild-type"), ])
 ggsurvplot(f3, dt, title = "survival curve in Mutant group")
 ggsurvplot(f4, dt, title = "survival curve in Wild-type group")
 ```
