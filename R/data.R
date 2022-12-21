@@ -11,3 +11,17 @@
 #' @docType data
 #' @keywords data
 NULL
+
+#' panitumumab clinical trial data
+#'
+#' @name adsl
+#' @docType data
+#' @keywords data
+NULL
+
+#' panitumumab clinical trial data
+#'
+#' @name biomark
+#' @docType data
+#' @keywords data
+NULL
